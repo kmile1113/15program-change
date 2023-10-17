@@ -1,0 +1,66 @@
+#!/bin/bash
+while true
+do
+echo "************************"
+echo 1.注册
+echo 2.登录
+echo 3.退出
+read -p "请输入选择": num
+case $num in
+1)
+echo "欢迎来到注册界面"
+read -p "请输入用户名": user
+read -p "请输入密码": password
+read -p "请确认密码": password2
+ 
+while read line
+do
+Nuser=`echo $line | cut -d ":" -f 1`
+if [ "$user" == "$Nuser" ];then
+echo "用户名已存在"
+continue 2
+fi
+done < user.txt
+if [ "${#user}" -ge 3 -a "${#password}" -ge 4 ]
+then
+if [ "${password}" == "${password2}" ]
+then
+echo "${user}:${password}" >> user.txt
+echo "恭喜你注册成功"
+else
+echo "两次密码不一致"
+fi
+fi
+
+;;
+2)
+echo "欢迎来到登录界面"
+read -p "请输入用户名": Luser
+read -p "请输入密码": Lpassword
+
+while read line
+do
+name=`echo $line | cut -d ":" -f 1`
+key=`echo $line | cut -d ":" -f 2`
+if [ "${Luser}" == "${name}" ]
+then
+	if [ "${Lpassword}" == "${key}" ]
+	then
+		echo "登录成功"
+		echo "USERNAME:${Luser}" >> history.dat
+		echo  "HISTORY:" >> history.dat
+		exit 0
+	else
+	echo "key is wrong"
+	fi
+
+fi
+done < user.txt
+;;
+3)
+exit
+;;
+*)
+echo "wrong"
+esac
+done

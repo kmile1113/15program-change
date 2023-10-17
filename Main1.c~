@@ -1,0 +1,482 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <sys/stat.h>
+
+#define DEFAULT_FILENAME "mydict.dat"
+#define DEFAULT_HISTORY_FILENAME "history.dat"
+#define TEMP_FILENAME "tem.dat"
+
+
+int main(void){
+	int enter;
+	printf("***** Welcome to word space ***\n*");
+ chmod("login.sh", S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IWGRP|S_IXGRP|S_IROTH|S_IWOTH|S_IXOTH);
+                system("./login.sh");
+
+while(1){
+		printf("*****************************************************************\n");
+		printf("*1.word_dictionary   2.amend_word  3.word_exercise 4.hostory    5.quit     *\n");
+		printf("*****************************************************************\n");
+		printf("Please choose:");
+	scanf("%d",&enter);
+	switch(enter)
+		{
+			case 1:
+				ChaXun();
+			    break;
+			case 2:
+				JiaoZhun();
+				break;
+			case 3:	
+				chmod("ex.sh", S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IWGRP|S_IXGRP|S_IROTH|S_IWOTH|S_IXOTH); 					
+				system("./ex.sh");
+				break;
+			case 4:
+				system("cat history.dat");
+				break;
+			case 5:
+				return 0;
+			default :
+				printf("Invalid data cmd.\n");
+		}
+
+   }
+}
+/*读取文件file中的一行文本，放到buf中*/
+void FileReadLine(FILE *file, char *buf)
+{
+   char nowch,i=0;
+/*循环读取一个字符，直到遇到“\n”或文件结束符为止身*/
+   nowch = fgetc(file);
+   while (nowch !='\n' && nowch != EOF)
+	{
+	buf[i++]= nowch;
+	nowch = fgetc(file);
+	}
+    buf[i] ='\0';
+}
+
+/*向文件file中写入一行文本,写入的内容为buf */
+void FileWriteLine(FILE *file, char *buf)
+{
+    fputs(buf, file);
+    fputc('\n', file);
+}
+
+
+/*在词典文件file中查找单词word，然后将解释放到exp中*/
+int DictFindWord(FILE *file, char *word, char *exp){
+	char e[80];
+/*将流指针移动到文件开头*/
+	fseek(file, 0, SEEK_SET);
+/*搜索至文件尾*/
+	while (!feof(file))
+{
+
+ 	FileReadLine(file, exp);/*读取文件中的单词行*/
+/*比较是否与被查询单词相同，若相同则读出解释行并返回“*/
+	if(strcmp(word, exp)== 0)
+	{
+	FileReadLine(file, exp);
+	return 1;
+	}
+/*其他情况忽略解释行。*/
+	FileReadLine(file, e);
+}
+/*返回0表示未找到要查询的单词*/
+	return 0;
+}
+
+/*添加单词word，解释exp到词典文件file中*/
+void DictAddWord(FILE *file, char *word, char *exp)
+{
+/*将流指针移动到文件尾*/
+   fseek(file, 0, SEEK_END);
+/*分别添加单词行和解释行*/
+   FileWriteLine(file, word);
+   FileWriteLine(file, exp);
+}
+
+int DeleteWord(FILE *file, char *word, char *exp)
+{
+	FILE *ft;
+	int i;
+	char *tempfile=TEMP_FILENAME;
+	ft = fopen(tempfile,"w");
+	if(ft==NULL)
+	{
+	    printf("Brror: Cannot open the dictionary file.\n");
+	    return 1;
+	}
+	fseek(file,0,SEEK_SET);
+	fseek(ft,0,SEEK_SET);
+	while (!feof(file))
+ {
+	i=0;
+	FileReadLine(file,exp);     
+	if(strcmp(exp,word)!=0)
+        {
+	fflush(ft);
+	fprintf(ft,"%s",exp);
+	fprintf(ft,"\n");
+//	i=0;
+//	while(exp[i]!='\0'){
+//	exp[i++]=0;
+//	}
+	FileReadLine(file,exp);
+	FileWriteLine(ft,exp);
+	}
+	else
+	{
+	FileReadLine(file,exp);
+	}
+	while(exp[i]!='\0'){
+	exp[i++]=0;
+	}
+ }
+close(ft);
+remove(DEFAULT_FILENAME);
+rename(TEMP_FILENAME,DEFAULT_FILENAME);
+}
+int ChaXun(void){
+	int i,res;
+	char *dictfilename = DEFAULT_FILENAME;
+	char *historyname= DEFAULT_HISTORY_FILENAME;
+	FILE *dictfile;
+	FILE *history;
+	char nowch,choice;
+	char cmdbuf[100], wordbuf[80],expbuf[80];
+
+	dictfile = fopen(dictfilename,"a+");/*打开字典文件。*/
+	if (dictfile == NULL)
+	{
+	    printf("Brror: Cannot open the dictionary file.\n");
+	    return 1;
+	}
+	history = fopen(historyname,"a+");/*打开字典文件。*/
+	if (history == NULL)
+	{
+	    printf("Brror: Cannot open the dictionary file.\n");
+	    return 1;
+	}
+	printf("\n****************This is your dictionary******************");
+	printf("\nIf you want to quit ,please enter #");
+	printf("\nplease enter word you want query :");
+	/*输出欢迎信息*/
+	getchar();
+	while (1)
+ {
+	i=res=0;
+	while((nowch=getchar())!='\n'){
+	cmdbuf[i++]=nowch;
+	}
+//printf("%s\n",cmdbuf);
+/*接收的字符串末尾添加"\0"，以便程序正常处理*/
+	cmdbuf[i]='\0';
+
+	if(strcmp(cmdbuf,"#")==0){
+	close(dictfilename);
+	close(history);
+	return 1;
+	}
+
+	res =DictFindWord(dictfile, cmdbuf, expbuf);
+	if(res == 1)
+	{
+		printf("\nWord: %s\n", cmdbuf);
+		printf("Bxpression:%s", expbuf);
+		printf("\n------");
+		fseek(history, 0, SEEK_END);
+/*分别添加单词行和解释行*/
+		FileWriteLine(history, cmdbuf);
+		printf("\nIf you want to quit ,please enter #");
+		printf("\nIf you want to continue ,please enter the word :");
+	}
+/*否则输入出错误信息*/
+	else
+	{
+		printf("\nword '%s' not exist", cmdbuf);
+		printf("\n------");
+		printf("\nIf you want to quit ,please enter #");
+		printf("\nIf you want to continue ,please enter the word :");
+	}
+
+/*end*/	
+	i=0;
+	while(cmdbuf[i]!='\0'){
+	cmdbuf[i++]=0;
+	}
+ }
+}
+
+int JiaoZhun(void){
+	int enter;
+getchar();
+while(1){
+	printf("\n***********amend your dictionary**************************\n");
+	printf("*1.add_word   2.delete_word   3.replace_word  4:quit            *\n");
+	printf("*****************************************************************\n");
+	printf("Please choose:");
+	scanf("%d",&enter);
+
+	switch(enter)
+		{
+			case 1:
+				Add();
+			    break;
+			case 2:
+				Delete();
+				break;
+			case 3:				
+				Change();
+				break;
+			case 4:
+				return 1;
+			default :
+				printf("Invalid data cmd.\n");
+		}
+
+}
+}
+
+int Add(){
+	int i,res;
+	char *dictfilename = DEFAULT_FILENAME;
+	char *historyname= DEFAULT_HISTORY_FILENAME;
+	FILE *dictfile;
+	FILE *history;
+	char nowch;
+	char cmdbuf[100], wordbuf[80],expbuf[80];
+
+	dictfile = fopen(dictfilename,"a+");/*打开字典文件。*/
+	if (dictfile == NULL)
+	{
+	    printf("Brror: Cannot open the dictionary file.\n");
+	    return 1;
+	}
+	history = fopen(historyname,"a+");/*打开字典文件。*/
+	if (history == NULL)
+	{
+	    printf("Brror: Cannot open the dictionary file.\n");
+	    return 1;
+	}
+	getchar();
+	while(1){
+	i=res=0;
+	printf("\n########################################## Add ############################################");
+	printf("\nIf you want to quit ,please enter #");
+	printf("\nPlease enter the word you want to add in your dictionary:");
+	while((nowch=getchar())!='\n'){
+	cmdbuf[i++]=nowch;
+	}
+	cmdbuf[i]='\0';
+	if(strcmp(cmdbuf,"#")==0){
+	close(dictfilename);
+	close(history);
+	return 1;
+	}
+
+	i=0;
+	printf("Please enter the expression you want to add in your dictionary:");
+	while((nowch=getchar())!='\n'){
+	expbuf[i++]=nowch;
+	}
+	expbuf[i]='\0';
+	DictAddWord(dictfile, cmdbuf, expbuf);
+/*end*/	
+	i=0;
+	while(cmdbuf[i]!='\0'){
+	cmdbuf[i++]=0;
+	}	
+	i=0;
+	while(expbuf[i]!='\0'){
+	expbuf[i++]=0;
+	}
+}
+}
+
+int Delete(){
+	int i,res;
+	char *dictfilename = DEFAULT_FILENAME;
+	FILE *dictfile;
+	FILE *history;
+	char nowch;
+	char cmdbuf[100], wordbuf[80],expbuf[80];
+
+	dictfile = fopen(dictfilename,"rt+");/*打开字典文件。*/
+	if (dictfile == NULL)
+	{
+	    printf("Brror: Cannot open the dictionary file.\n");
+	    return 1;
+	}
+
+	getchar();
+
+	i=res=0;
+
+	printf("\n########################################## Delete ############################################");
+	printf("\nIf you want to quit ,please enter #");
+	printf("\n The word you want to delete:");
+	
+	while((nowch=getchar())!='\n'){
+	cmdbuf[i++]=nowch;
+	}
+	cmdbuf[i]='\0';
+	printf("%s\n",cmdbuf);
+
+	if(strcmp(cmdbuf,"#")==0){
+	close(dictfilename);
+	return 1;
+	}
+	else{
+		DeleteWord(dictfile,cmdbuf,expbuf);
+	}
+	
+	return 1;
+
+}
+
+
+
+
+int Change(){
+	int enter;
+	getchar();
+	while(1){
+	printf("if you want to end,please enter 2:\n");	
+	printf("if you want to change your word,please enter 1:\n");
+	printf("your choice:");
+	scanf("%d",&enter);
+	switch(enter)
+		{
+			case 1:
+					if(Change_Word()==1)
+					printf("change successful\n\n");
+			    break;
+			case 2:
+				getchar();
+				return 1;
+			default :
+				printf("Invalid data cmd.\n");
+		}
+	}
+
+}
+
+int Change_Word(){
+	int i,res,flag=0;
+	char *dictfilename = DEFAULT_FILENAME;
+	char *tempfilename = TEMP_FILENAME;
+	FILE *dictfile;
+	FILE *tempfile;
+//	FILE *history;
+	char nowch;
+	char old_cmdbuf[100], new_cmdbuf[100], wordbuf[80],expbuf[80],new_expbuf[80];
+
+	dictfile = fopen(dictfilename,"rt+");/*打开字典文件。*/
+	if (dictfile == NULL)
+	{
+	    printf("Brror: Cannot open the dictionary file.\n");
+	    return 1;
+	}
+	tempfile = fopen(tempfilename,"w");/*打开字典文件。*/
+	if (dictfile == NULL)
+	{
+	    printf("Brror: Cannot open the dictionary file.\n");
+	    return 1;
+	}
+	fseek(dictfile, 0, SEEK_SET);
+	fseek(tempfile, 0, SEEK_SET);
+	printf("\n####################################### replace your words #########################################");
+	printf("\nplease enter the old_word you want to change:");
+	getchar();
+	i=res=0;
+	while((nowch=getchar())!='\n'){
+	old_cmdbuf[i++]=nowch;
+	}
+	old_cmdbuf[i]='\0';
+	//printf("%s\n",old_cmdbuf);
+	
+	i=0;
+	printf("\nIf you only want to change the expression,please just enter the same word");	
+	printf("\nplease enter the new_word you want to change:");
+	while((nowch=getchar())!='\n'){
+	new_cmdbuf[i++]=nowch;
+	}
+	new_cmdbuf[i]='\0';
+
+	if(strcmp(old_cmdbuf,"#")==0){
+	close(dictfilename);
+	close(tempfilename);	
+	return flag;
+	}
+	while (!feof(dictfile))
+ {
+	FileReadLine(dictfile, expbuf);
+	fflush(tempfile);
+	if(strcmp(expbuf,old_cmdbuf)!=0)
+	{
+	FileWriteLine(tempfile, expbuf);
+	while(expbuf[i]!='\0'){
+	expbuf[i++]=0;
+	}
+	FileReadLine(dictfile, expbuf);
+	fflush(tempfile);
+	FileWriteLine(tempfile, expbuf);
+	while(expbuf[i]!='\0'){
+	expbuf[i++]=0;
+	}
+	}
+	else
+	{
+	flag=1;
+	while(expbuf[i]!='\0'){
+	expbuf[i++]=0;
+	}
+	fflush(tempfile);
+	FileWriteLine(tempfile, new_cmdbuf);
+	i=0;
+	printf("please enter the new_expression you want to change:");
+	while((nowch=getchar())!='\n'){
+	new_expbuf[i++]=nowch;
+	}
+	new_expbuf[i]='\0';
+	printf("%s\n",new_expbuf);
+	if(strcmp(new_expbuf,"@")==0)
+		{
+		FileReadLine(dictfile, expbuf);
+		fflush(tempfile);
+		FileWriteLine(tempfile, expbuf);	
+	while(expbuf[i]!='\0'){
+	expbuf[i++]=0;
+	}
+		}
+	else
+		{
+		FileReadLine(dictfile, expbuf);
+	while(expbuf[i]!='\0'){
+	expbuf[i++]=0;
+	}
+		fflush(tempfile);
+		FileWriteLine(tempfile, new_expbuf);	
+		}
+	}
+	
+ }
+close(dictfile);
+close(tempfile);
+remove(DEFAULT_FILENAME);
+rename(TEMP_FILENAME,DEFAULT_FILENAME);
+return flag;
+}
+
+
+
+
+
+
+
+
+
